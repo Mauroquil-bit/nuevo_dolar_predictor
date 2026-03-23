@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informe: ¿Plazo Fijo o Dólares? — Abril 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            azul: '#1e3a5f',
+            celeste: '#2d7dd2',
+            verde: '#0f9b57',
+            rojo: '#d9382a',
+            amarillo: '#f5a623',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-hero { background: linear-gradient(135deg, #1e3a5f 0%, #2d7dd2 60%, #1a9e6e 100%); }
+    .card-shadow { box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .pulse-green { animation: pulseGreen 2s infinite; }
+    @keyframes pulseGreen {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(15,155,87,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(15,155,87,0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- HERO -->
+  <header class="gradient-hero text-white py-14 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="flex items-center gap-2 text-blue-200 text-sm mb-4 font-medium tracking-wide uppercase">
+        <span>🇦🇷</span>
+        <span>Análisis Cambiario</span>
+        <span class="mx-1">·</span>
+        <span>23 de marzo de 2026</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
+        ¿Plazo Fijo o Dólares<br/>en Abril 2026?
+      </h1>
+      <p class="text-blue-100 text-lg max-w-2xl">
+        Análisis basado en 261 días de precio del dólar blue, sentimiento de noticias
+        de La Nación y Ámbito, y variables geopolíticas — incluyendo el riesgo de
+        cierre del <strong class="text-white">Estrecho de Ormuz</strong>.
+      </p>
+      <!-- VEREDICTO -->
+      <div class="mt-8 inline-flex items-center gap-3 bg-white/15 backdrop-blur border border-white/25 rounded-2xl px-6 py-4">
+        <span class="text-3xl">✅</span>
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-widest text-blue-200">Veredicto del modelo</div>
+          <div class="text-2xl font-extrabold text-white">PLAZO FIJO para abril</div>
+          <div class="text-blue-200 text-sm">Confianza: 64% · Modelo: XGBoost + NLP</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-12 space-y-12">
+
+    <!-- LOS NÚMEROS -->
+    <section>
+      <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
+        <span class="text-3xl">💵</span> Los números
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-celeste">
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Inversión</div>
+          <div class="text-2xl font-extrabold text-azul">$10.000</div>
+          <div class="text-sm text-gray-500">USD</div>
+        </div>
+        <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-celeste">
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Blue hoy</div>
+          <div class="text-2xl font-extrabold text-azul">$1.425</div>
+          <div class="text-sm text-gray-500">$14.250.000 en pesos</div>
+        </div>
+        <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-verde">
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Ganancia PF 2%</div>
+          <div class="text-2xl font-extrabold text-verde">+$200 USD</div>
+          <div class="text-sm text-gray-500">$285.000 pesos en 30 días</div>
+        </div>
+        <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even</div>
+          <div class="text-2xl font-extrabold text-amarillo">$1.453,50</div>
+          <div class="text-sm text-gray-500">El blue debe superar esto</div>
+        </div>
+      </div>
+      <p class="mt-4 text-sm text-gray-500 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3">
+        ⚖️ Para que <strong>mantener dólares sea mejor</strong>, el blue tiene que pasar de
+        <strong>$1.453,50</strong> antes del 23 de abril. El modelo dice que es improbable.
+      </p>
+    </section>
+
+    <!-- QUÉ DICE EL MODELO -->
+    <section>
+      <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
+        <span class="text-3xl">🤖</span> Qué dice el modelo
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Histórico -->
+        <div class="bg-white rounded-2xl card-shadow p-6">
+          <h3 class="font-bold text-gray-700 mb-4">Comportamiento histórico (261 días)</h3>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="font-medium text-verde">Baja o estable</span>
+                <span class="font-bold text-verde">61% — 159 días</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-3">
+                <div class="bg-verde h-3 rounded-full" style="width:61%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span class="font-medium text-rojo">Sube</span>
+                <span class="font-bold text-rojo">39% — 102 días</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-3">
+                <div class="bg-rojo h-3 rounded-full" style="width:39%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tendencia reciente -->
+        <div class="bg-white rounded-2xl card-shadow p-6">
+          <h3 class="font-bold text-gray-700 mb-4">Tendencia reciente</h3>
+          <div class="space-y-2 font-mono text-sm">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-500">19/03</span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold">$1.430</span>
+                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">—</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-gray-500">20/03</span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold">$1.425</span>
+                <span class="text-xs text-rojo bg-red-50 px-2 py-0.5 rounded">▼ -0.35%</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center py-2">
+              <span class="text-gray-500">23/03 <span class="text-blue-400">(hoy)</span></span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-azul">$1.425</span>
+                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">PLANO</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-2 text-sm text-verde font-medium">
+            <span class="pulse-green w-2 h-2 bg-verde rounded-full inline-block"></span>
+            Predicción mañana: BAJA / ESTABLE (64% confianza)
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentimiento noticias -->
+      <div class="mt-6 bg-white rounded-2xl card-shadow p-6">
+        <h3 class="font-bold text-gray-700 mb-4">Sentimiento de noticias (La Nación + Ámbito)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 uppercase text-xs tracking-wide border-b">
+                <th class="pb-2 pr-6">Día</th>
+                <th class="pb-2 pr-6">Artículos</th>
+                <th class="pb-2 pr-6">Sentimiento</th>
+                <th class="pb-2">% Negativo</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr class="py-2">
+                <td class="py-3 pr-6 font-medium">21/03</td>
+                <td class="py-3 pr-6">5</td>
+                <td class="py-3 pr-6"><span class="text-rojo font-semibold">-0.20</span></td>
+                <td class="py-3"><span class="bg-red-50 text-rojo px-2 py-0.5 rounded-full text-xs font-bold">40%</span></td>
+              </tr>
+              <tr>
+                <td class="py-3 pr-6 font-medium">22/03</td>
+                <td class="py-3 pr-6">9</td>
+                <td class="py-3 pr-6"><span class="text-rojo font-semibold">-0.39</span></td>
+                <td class="py-3"><span class="bg-red-50 text-rojo px-2 py-0.5 rounded-full text-xs font-bold">44%</span></td>
+              </tr>
+              <tr>
+                <td class="py-3 pr-6 font-medium">23/03</td>
+                <td class="py-3 pr-6">5</td>
+                <td class="py-3 pr-6"><span class="text-rojo font-semibold">-0.20</span></td>
+                <td class="py-3"><span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full text-xs font-bold">20%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 space-y-1">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2">Titulares negativos detectados</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs bg-red-50 text-rojo border border-red-100 rounded-lg px-3 py-1">Alarma: inflación persistente, dólar atrasado</span>
+            <span class="text-xs bg-red-50 text-rojo border border-red-100 rounded-lg px-3 py-1">Advertencia Melconian: reservas</span>
+            <span class="text-xs bg-red-50 text-rojo border border-red-100 rounded-lg px-3 py-1">Riesgo país sigue subiendo</span>
+            <span class="text-xs bg-red-50 text-rojo border border-red-100 rounded-lg px-3 py-1">Se deteriora el humor social</span>
+            <span class="text-xs bg-red-50 text-rojo border border-red-100 rounded-lg px-3 py-1">Suba de morosidad crediticia</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTRECHO DE ORMUZ -->
+    <section>
+      <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
+        <span class="text-3xl">🛢️</span> Variable geopolítica: El Estrecho de Ormuz
+      </h2>
+
+      <!-- Descripción -->
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-6 mb-6">
+        <h3 class="font-bold text-lg mb-3 text-blue-300">¿Qué es el Estrecho de Ormuz?</h3>
+        <p class="text-slate-300 text-sm leading-relaxed mb-4">
+          Canal de apenas <strong class="text-white">55 km de ancho</strong> entre Irán y Omán.
+          Es el cuello de botella energético más crítico del planeta.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-blue-300">21%</div>
+            <div class="text-xs text-slate-400 mt-1">del petróleo mundial</div>
+            <div class="text-xs text-slate-500">~17 millones barriles/día</div>
+          </div>
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-blue-300">25%</div>
+            <div class="text-xs text-slate-400 mt-1">del GNL global</div>
+            <div class="text-xs text-slate-500">Gas natural licuado</div>
+          </div>
+          <div class="bg-white/10 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-yellow-300">+$30</div>
+            <div class="text-xs text-slate-400 mt-1">Brent sube en días</div>
+            <div class="text-xs text-slate-500">ante amenaza de cierre</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- El dato clave -->
+      <div class="bg-green-50 border-2 border-verde rounded-2xl p-6 mb-6">
+        <div class="flex items-start gap-4">
+          <span class="text-4xl">🔑</span>
+          <div>
+            <h3 class="font-bold text-verde text-lg mb-2">El dato clave: el blue no reaccionó</h3>
+            <p class="text-gray-700 leading-relaxed">
+              Con el conflicto activo y el riesgo de cierre del Estrecho de Ormuz sobre la mesa,
+              <strong>el dólar blue se mantuvo en $1.425</strong>. El Estrecho de Ormuz es exactamente
+              el tipo de shock externo que históricamente dispara el blue en Argentina.
+              Si esta vez no lo movió, el ancla cambiaria es genuinamente fuerte.
+            </p>
+            <div class="mt-3 inline-flex items-center gap-2 bg-verde text-white text-sm font-semibold px-4 py-2 rounded-full">
+              <span>+4 puntos de estabilidad</span>
+              <span class="text-green-200">asignados por el modelo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ¿Por qué resistió? -->
+      <div class="bg-white rounded-2xl card-shadow p-6">
+        <h3 class="font-bold text-gray-700 mb-4">¿Por qué Argentina resistió el shock?</h3>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
+            <span class="text-xl mt-0.5">🔒</span>
+            <div>
+              <span class="font-semibold text-azul">Cepo cambiario</span>
+              <p class="text-sm text-gray-600">Contiene la demanda de dólares estructuralmente, desconectando el mercado interno del shock externo.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
+            <span class="text-xl mt-0.5">⛽</span>
+            <div>
+              <span class="font-semibold text-verde">Argentina = exportadora de energía</span>
+              <p class="text-sm text-gray-600">Vaca Muerta implica que el petróleo caro <em>beneficia</em> al país en lugar de perjudicarlo.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
+            <span class="text-xl mt-0.5">🤝</span>
+            <div>
+              <span class="font-semibold text-purple-700">Acuerdo con el FMI</span>
+              <p class="text-sm text-gray-600">Credibilidad del programa económico que ancla las expectativas de tipo de cambio.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-yellow-50 rounded-xl">
+            <span class="text-xl mt-0.5">📈</span>
+            <div>
+              <span class="font-semibold text-yellow-700">Alta tasa en pesos</span>
+              <p class="text-sm text-gray-600">El costo de dolarizarse es alto: el plazo fijo al 2% mensual desincentiva la fuga.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIESGOS -->
+    <section>
+      <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
+        <span class="text-3xl">⚠️</span> Riesgos a monitorear en abril
+      </h2>
+      <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-azul text-white">
+            <tr>
+              <th class="text-left px-5 py-3 font-semibold">Riesgo</th>
+              <th class="text-center px-4 py-3 font-semibold">Probabilidad</th>
+              <th class="text-center px-4 py-3 font-semibold">Impacto en blue</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-medium">Cierre efectivo del Estrecho de Ormuz</td>
+              <td class="px-4 py-3 text-center"><span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-bold">Baja-Media</span></td>
+              <td class="px-4 py-3 text-center text-orange-600 font-semibold">+3% a +8%</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-medium">Levantamiento / ajuste del cepo</td>
+              <td class="px-4 py-3 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-bold">Media</span></td>
+              <td class="px-4 py-3 text-center text-rojo font-semibold">+5% a +15%</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-medium">Desacuerdo con el FMI</td>
+              <td class="px-4 py-3 text-center"><span class="bg-green-100 text-verde px-2 py-0.5 rounded-full text-xs font-bold">Baja</span></td>
+              <td class="px-4 py-3 text-center text-rojo font-bold">+10% a +20%</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-medium">Inflación mayor a la esperada</td>
+              <td class="px-4 py-3 text-center"><span class="bg-red-100 text-rojo px-2 py-0.5 rounded-full text-xs font-bold">Alta</span></td>
+              <td class="px-4 py-3 text-center text-orange-600 font-semibold">+1% a +3%</td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-5 py-3 font-medium">Tensión política / electoral</td>
+              <td class="px-4 py-3 text-center"><span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-bold">Media</span></td>
+              <td class="px-4 py-3 text-center text-orange-600 font-semibold">+3% a +8%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CONCLUSIÓN -->
+    <section>
+      <div class="bg-gradient-to-br from-azul to-celeste text-white rounded-2xl p-8">
+        <h2 class="text-2xl font-extrabold mb-6 flex items-center gap-2">
+          <span class="text-3xl">🏁</span> Conclusión final
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white/15 rounded-xl p-5">
+            <div class="text-4xl font-black text-green-300 mb-1">PLAZO FIJO ✓</div>
+            <div class="text-blue-100 text-sm">Recomendación para abril 2026</div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-start gap-2 text-sm text-blue-100">
+              <span class="text-green-300 font-bold mt-0.5">1.</span>
+              <span>El blue no reaccionó al riesgo de cierre del Estrecho de Ormuz → ancla cambiaria fuerte</span>
+            </div>
+            <div class="flex items-start gap-2 text-sm text-blue-100">
+              <span class="text-green-300 font-bold mt-0.5">2.</span>
+              <span>Modelo predice BAJA/ESTABLE con <strong class="text-white">64% de confianza</strong></span>
+            </div>
+            <div class="flex items-start gap-2 text-sm text-blue-100">
+              <span class="text-green-300 font-bold mt-0.5">3.</span>
+              <span>61% del último año el dólar bajó o se mantuvo</span>
+            </div>
+            <div class="flex items-start gap-2 text-sm text-blue-100">
+              <span class="text-green-300 font-bold mt-0.5">4.</span>
+              <span>Ganancia segura de <strong class="text-white">$200 USD</strong> en 30 días</span>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-white/20 pt-4 text-sm text-blue-200">
+          <strong class="text-white">Acción recomendada:</strong> Monitorear la primera semana de abril.
+          Si hay novedades sobre el cepo, el FMI, o escalada en el Estrecho de Ormuz, recalcular.
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="text-center text-xs text-gray-400 pt-4 pb-8 border-t border-gray-100">
+      <p class="mb-1">⚠️ Este informe es análisis de datos automatizado. No constituye asesoramiento financiero profesional.</p>
+      <p>Generado por <strong class="text-gray-500">Dólar Predictor</strong> ·
+        XGBoost + Sentimiento NLP · Fuente: Bluelytics API, La Nación RSS, Ámbito RSS</p>
+      <p class="mt-1 font-mono text-gray-300">python main.py --mode full --no-twitter</p>
+    </footer>
+
+  </main>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Modelos entrenados (pesados, se regeneran)
+models_saved/*.pkl
+
+# Datos crudos (se regeneran con el pipeline)
+data/raw/
+data/processed/
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,24 @@
+# Data collection
+tweepy>=4.14.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+feedparser>=6.0.10
+
+# NLP (sentimiento basado en keywords, sin dependencias pesadas)
+# Para usar modelo neuronal (requiere habilitar Windows Long Paths):
+#   pip install pysentimiento transformers torch
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utils
+python-dotenv>=1.0.0
+schedule>=1.2.0
+tqdm>=4.66.0
