@@ -180,7 +180,7 @@ def predict_tomorrow(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
     direction_proba = classifier.predict_proba(last_row)[0]
     predicted_return = regressor.predict(last_row)[0]
 
-    current_price = df["sell"].iloc[-1]
+    current_price = df["buy"].iloc[-1]
     predicted_price = current_price * (1 + predicted_return)
 
     return {

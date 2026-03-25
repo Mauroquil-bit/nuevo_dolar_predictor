@@ -90,7 +90,7 @@ def append_current_price(dolar_type: str = None) -> pd.DataFrame:
         df = df.drop_duplicates(subset=["date", "type"], keep="last")
         df = df.sort_values("date")
         df.to_csv(filepath, index=False)
-        print(f"Precio guardado: {dolar_type} = ${new_price['sell']} (venta)")
+        print(f"Precio guardado: {dolar_type} = ${new_price['buy']} (compra) / ${new_price['sell']} (venta)")
 
     return df
 

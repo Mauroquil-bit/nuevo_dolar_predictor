@@ -23,9 +23,12 @@ def load_dollar_history(filepath: str = None) -> pd.DataFrame:
 
 
 def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Agrega features técnicas de serie temporal de precios."""
+    """Agrega features técnicas de serie temporal de precios.
+    Usa el precio comprador (buy) ya que es el precio que recibe el usuario
+    cuando vende dólares (ej: para pasarlos a plazo fijo).
+    """
     df = df.copy().sort_values("date")
-    price = df["sell"]
+    price = df["buy"]
 
     # Retornos
     df["return_1d"] = price.pct_change(1)
@@ -42,13 +45,13 @@ def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ma_ratio"] = df["ma_7d"] / df["ma_14d"]
 
     # Spreads
-    if "buy" in df.columns:
+    if "sell" in df.columns:
         df["spread"] = df["sell"] - df["buy"]
         df["spread_pct"] = df["spread"] / df["buy"]
 
-    # Lags del precio de venta
+    # Lags del precio comprador
     for lag in range(1, LOOKBACK_DAYS + 1):
-        df[f"sell_lag_{lag}"] = price.shift(lag)
+        df[f"buy_lag_{lag}"] = price.shift(lag)
 
     return df
 
@@ -96,8 +99,8 @@ def add_target(df: pd.DataFrame, horizon: int = 1) -> pd.DataFrame:
     target = 1 si el precio sube, 0 si baja o se mantiene.
     """
     df = df.copy()
-    df["target_price"] = df["sell"].shift(-horizon)
-    df["target_return"] = df["target_price"] / df["sell"] - 1
+    df["target_price"] = df["buy"].shift(-horizon)
+    df["target_return"] = df["target_price"] / df["buy"] - 1
     df["target_direction"] = (df["target_return"] > 0).astype(int)
     return df
 
@@ -117,7 +120,7 @@ def build_feature_matrix(
     df = add_target(df, horizon=horizon)
 
     # Eliminar filas con NaN en columnas críticas
-    df = df.dropna(subset=["sell", "target_direction"])
+    df = df.dropna(subset=["buy", "target_direction"])
 
     return df
 
