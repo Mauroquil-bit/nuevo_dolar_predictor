@@ -28,7 +28,7 @@ def get_prediction():
     twitter_sentiment = pd.read_csv(twitter_path, parse_dates=["date"]) if os.path.exists(twitter_path) else None
     news_features = pd.read_csv(news_path, parse_dates=["date"]) if os.path.exists(news_path) else None
 
-    df = build_feature_matrix(dollar_df, twitter_sentiment, news_features)
+    df = build_feature_matrix(dollar_df, twitter_sentiment, news_features, horizon=30)
     prediction = predict_tomorrow(df)
     return prediction, dollar_df
 
@@ -82,15 +82,18 @@ def render_html(prediction, dollar_df):
     current_price = prediction["current_price"]
     direction = prediction["predicted_direction"]
     confidence = prediction["confidence"]
-    predicted_price = prediction["predicted_price"]
-    ret_pct = prediction["predicted_return_pct"]
+    predicted_price_30d = prediction["predicted_price_30d"]
+    ret_pct = prediction["predicted_return_30d_pct"]
+    breakeven = prediction["breakeven"]
+    pf_rate_pct = prediction["pf_rate_pct"]
+    recomendacion = prediction["recomendacion"]
 
-    recomendar_pf = direction == "BAJA"
-    breakeven = current_price * 1.02
+    recomendar_pf = recomendacion == "RENOVAR_PLAZO_FIJO"
 
     # Condicionales de estilo
-    veredicto = "RENOVAR PLAZO FIJO" if recomendar_pf else "ESPERAR, NO RENOVAR"
-    veredicto_icon = "✅" if recomendar_pf else "⚠️"
+    veredicto = "✅ RENOVAR PLAZO FIJO" if recomendar_pf else "💵 QUEDARSE EN DÓLARES"
+    veredicto_icon = "✅" if recomendar_pf else "💵"
+    veredicto_texto = "RENOVAR PLAZO FIJO" if recomendar_pf else "QUEDARSE EN DÓLARES"
     hero_class = "gradient-hero" if recomendar_pf else "gradient-hero-red"
     border_pred = "border-verde" if recomendar_pf else "border-rojo"
     text_pred = "text-verde" if recomendar_pf else "text-rojo"
@@ -114,10 +117,10 @@ def render_html(prediction, dollar_df):
   <!-- Open Graph / Twitter Card -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="¿Renovar Plazo Fijo? — {dia} de {mes} {anio}" />
-  <meta property="og:description" content="Blue compra: {fmt(current_price)} · Predicción: {direction} ({confidence:.0%} confianza) · {veredicto}" />
+  <meta property="og:description" content="Blue compra: {fmt(current_price)} · Estimado 30d: {ret_pct:+.2f}% · {veredicto_texto}" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="¿Renovar Plazo Fijo? — {dia} de {mes} {anio}" />
-  <meta name="twitter:description" content="Blue compra hoy: {fmt(current_price)} · El modelo predice {direction} con {confidence:.0%} de confianza → {veredicto}" />
+  <meta name="twitter:description" content="Blue compra hoy: {fmt(current_price)} · El modelo estima {ret_pct:+.2f}% en 30 días (PF: {pf_rate_pct:.0f}%) → {veredicto_texto}" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -174,7 +177,7 @@ def render_html(prediction, dollar_df):
         <span class="text-3xl">{veredicto_icon}</span>
         <div>
           <div class="text-xs font-semibold uppercase tracking-widest text-blue-200">Recomendación de hoy</div>
-          <div class="text-2xl font-extrabold text-white">{veredicto}</div>
+          <div class="text-2xl font-extrabold text-white">{veredicto_texto}</div>
           <div class="text-blue-200 text-sm">Confianza: {confidence:.0%} · Modelo: XGBoost + NLP</div>
         </div>
       </div>
@@ -195,20 +198,21 @@ def render_html(prediction, dollar_df):
           <div class="text-sm text-gray-500">Precio al que te compran los dólares</div>
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 {border_pred}">
-          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Predicción mañana</div>
-          <div class="text-3xl font-extrabold {text_pred}">{fmt(predicted_price)}</div>
-          <div class="text-sm text-gray-500">{dir_icon} {direction} ({ret_pct:+.2f}%)</div>
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Estimado en 30 días</div>
+          <div class="text-3xl font-extrabold {text_pred}">{fmt(predicted_price_30d)}</div>
+          <div class="text-sm text-gray-500">{dir_icon} {direction.replace("_", " ")} ({ret_pct:+.2f}%)</div>
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
-          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF 2%)</div>
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF {pf_rate_pct:.0f}%)</div>
           <div class="text-3xl font-extrabold text-amarillo">{fmt(breakeven)}</div>
           <div class="text-sm text-gray-500">El blue debe superar esto en 30 días</div>
         </div>
       </div>
       <p class="mt-4 text-sm text-gray-600 {alert_bg} border rounded-xl px-4 py-3">
-        {veredicto_icon} Para que <strong>mantener dólares sea mejor</strong>,
-        el blue comprador debe superar <strong>{fmt(breakeven)}</strong> en los próximos 30 días.
-        El modelo dice que es <strong>{improbable}</strong>.
+        {veredicto_icon} El modelo estima que el dólar subirá <strong>{ret_pct:+.2f}%</strong> en los próximos 30 días.
+        El plazo fijo rinde <strong>{pf_rate_pct:.0f}%</strong>.
+        Para que mantener dólares sea mejor, el blue debe superar <strong>{fmt(breakeven)}</strong>.
+        El modelo dice que es <strong>{improbable}</strong>. → <strong>{veredicto_texto}</strong>
       </p>
     </section>
 
@@ -223,7 +227,7 @@ def render_html(prediction, dollar_df):
         </div>
         <div class="mt-4 flex items-center gap-2 text-sm {text_pred} font-medium">
           <span class="{pulse_class} w-2 h-2 {pulse_bg} rounded-full inline-block"></span>
-          Predicción para mañana: {direction} ({confidence:.0%} confianza)
+          Predicción a 30 días: {direction.replace("_", " ")} ({confidence:.0%} confianza)
         </div>
       </div>
     </section>
@@ -236,7 +240,7 @@ def render_html(prediction, dollar_df):
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div class="bg-white/15 rounded-xl p-5">
-            <div class="text-3xl font-black {accent} mb-1">{veredicto_icon} {veredicto}</div>
+            <div class="text-3xl font-black {accent} mb-1">{veredicto}</div>
             <div class="text-blue-100 text-sm">{dia} de {mes} de {anio}</div>
           </div>
           <div class="space-y-2">
@@ -246,15 +250,15 @@ def render_html(prediction, dollar_df):
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">2.</span>
-              <span>Modelo predice {direction} con <strong class="text-white">{confidence:.0%} de confianza</strong></span>
+              <span>Modelo estima <strong class="text-white">{ret_pct:+.2f}%</strong> en 30 días (confianza: <strong class="text-white">{confidence:.0%}</strong>)</span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">3.</span>
-              <span>Break-even del plazo fijo 2%: <strong class="text-white">{fmt(breakeven)}</strong></span>
+              <span>Break-even del plazo fijo {pf_rate_pct:.0f}%: <strong class="text-white">{fmt(breakeven)}</strong></span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">4.</span>
-              <span>Precio estimado mañana: <strong class="text-white">{fmt(predicted_price)}</strong></span>
+              <span>Precio estimado en 30 días: <strong class="text-white">{fmt(predicted_price_30d)}</strong></span>
             </div>
           </div>
         </div>
@@ -278,12 +282,13 @@ def main():
     print("Generando reporte diario...")
     prediction, dollar_df = get_prediction()
 
-    direction = prediction["predicted_direction"]
+    recomendacion = prediction["recomendacion"]
     confidence = prediction["confidence"]
     current_price = prediction["current_price"]
+    ret_pct = prediction["predicted_return_30d_pct"]
     print(f"  Blue compra: {fmt(current_price)}")
-    print(f"  Predicción: {direction} ({confidence:.0%} confianza)")
-    print(f"  Recomendación: {'RENOVAR PLAZO FIJO' if direction == 'BAJA' else 'ESPERAR, NO RENOVAR'}")
+    print(f"  Estimado 30d: {ret_pct:+.2f}% (confianza {confidence:.0%})")
+    print(f"  Recomendación: {recomendacion}")
 
     html = render_html(prediction, dollar_df)
 
