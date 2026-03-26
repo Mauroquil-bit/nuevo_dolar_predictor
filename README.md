@@ -33,16 +33,16 @@ Cada día hábil, de forma automática:
 
 ---
 
-## 📸 Vista del informe
+## 📊 Informe diario
 
-El informe diario muestra:
+El informe muestra cada día hábil:
 - Precio actual del dólar blue (compra)
 - Predicción a 30 días con nivel de confianza
 - Break-even: cuánto debe subir el dólar para que no convenga el plazo fijo
 - Tendencia de los últimos 7 días
-- Recomendación clara: RENOVAR PLAZO FIJO o QUEDARSE EN DÓLARES
+- Recomendación clara: **RENOVAR PLAZO FIJO** o **QUEDARSE EN DÓLARES**
 
-👉 [Ver informe en vivo](https://mauroquil-bit.github.io/nuevo_dolar_predictor/)
+👉 **[Ver informe en vivo](https://mauroquil-bit.github.io/nuevo_dolar_predictor/)**
 
 ---
 
@@ -169,7 +169,7 @@ python generate_report.py
 
 ---
 
-## 📊 Rendimiento del modelo
+## 📈 Rendimiento del modelo
 
 | Métrica | Valor típico |
 |---|---|
@@ -178,7 +178,7 @@ python generate_report.py
 | Validación | TimeSeriesSplit (5 folds) |
 | Datos históricos | 300+ días de dólar blue |
 
-> La accuracy de 55-65% puede parecer baja, pero es **mejor que azar** (50%) en un mercado altamente impredecible. El objetivo no es predecir perfectamente, sino tener una señal estadísticamente útil.
+> La accuracy de 55–65% puede parecer baja, pero es **mejor que azar** (50%) en un mercado altamente impredecible. El objetivo no es predecir perfectamente, sino tener una señal estadísticamente útil.
 
 ---
 
@@ -186,10 +186,10 @@ python generate_report.py
 
 - [ ] Agregar fuentes RSS adicionales: **Infobae**, **Ámbito Financiero**, **El Cronista**
 - [ ] Incorporar datos macroeconómicos: reservas BCRA, inflación mensual, tasa LELIQ
-- [ ] Tasa del plazo fijo dinámica (hoy está hardcodeada al 2%)
+- [ ] Tasa del plazo fijo dinámica (hoy está en 2% fijo)
 - [ ] Backtesting histórico: ¿cuánto habrías ganado/perdido siguiendo las recomendaciones?
-- [ ] Dashboard interactivo con Streamlit o Grafana
-- [ ] Notificaciones por Telegram o WhatsApp cuando cambia la recomendación
+- [ ] Dashboard interactivo con Streamlit
+- [ ] Notificaciones por Telegram cuando cambia la recomendación
 - [ ] Soporte para otros tipos de dólar (MEP, CCL, Cripto)
 - [ ] Fine-tuning de un LLM en español financiero argentino
 
@@ -199,7 +199,7 @@ python generate_report.py
 
 1. Hacé un fork del repositorio
 2. Creá una rama: `git checkout -b feature/mi-mejora`
-3. Commiteá tus cambios: `git commit -m "Agrego fuente Ambito"`
+3. Commitemos tus cambios: `git commit -m "Agrego fuente Ambito"`
 4. Hacé push: `git push origin feature/mi-mejora`
 5. Abrí un Pull Request
 
