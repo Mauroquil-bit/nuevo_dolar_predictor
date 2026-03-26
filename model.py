@@ -39,8 +39,8 @@ def prepare_data(df: pd.DataFrame):
     """Prepara X e y para entrenamiento."""
     feature_cols = get_feature_columns(df)
     X = df[feature_cols].fillna(0)
-    y_class = df["target_direction"]
-    y_reg = df["target_return"]
+    y_class = df["target_direction_30d"]
+    y_reg = df["target_return_30d"]
     return X, y_class, y_reg, feature_cols
 
 
@@ -72,7 +72,7 @@ def train_classifier(X: pd.DataFrame, y: pd.Series) -> tuple:
     acc = accuracy_score(y_test, y_pred)
     print(f"\nTest Accuracy: {acc:.3f}")
     print("\nClassification Report:")
-    print(classification_report(y_test, y_pred, target_names=["Baja", "Sube"]))
+    print(classification_report(y_test, y_pred, target_names=["No_supera_PF", "Sube_mas_PF"]))
 
     return model, X_test, y_test, y_pred
 
@@ -164,9 +164,10 @@ def load_model(name: str):
     return model
 
 
-def predict_tomorrow(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
+def predict_tomorrow(df: pd.DataFrame, classifier=None, regressor=None, pf_rate: float = 0.02) -> dict:
     """
-    Genera predicción para el día siguiente usando la última fila disponible.
+    Genera predicción a 30 días usando la última fila disponible.
+    Responde: ¿conviene renovar plazo fijo o quedarse en dólares?
     """
     if classifier is None:
         classifier = load_model("classifier")
@@ -178,18 +179,25 @@ def predict_tomorrow(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
 
     direction = classifier.predict(last_row)[0]
     direction_proba = classifier.predict_proba(last_row)[0]
-    predicted_return = regressor.predict(last_row)[0]
+    predicted_return_30d = regressor.predict(last_row)[0]
 
     current_price = df["buy"].iloc[-1]
-    predicted_price = current_price * (1 + predicted_return)
+    predicted_price_30d = current_price * (1 + predicted_return_30d)
+    breakeven = current_price * (1 + pf_rate)
+
+    # Recomendación: si el modelo predice que el dólar sube más que el PF → quedarse en dólares
+    recomendar_pf = direction == 0  # 0 = no supera el PF
 
     return {
         "date_predicted": datetime.now().date().isoformat(),
         "current_price": current_price,
-        "predicted_direction": "SUBE" if direction == 1 else "BAJA",
+        "predicted_direction": "SUBE_MAS_QUE_PF" if direction == 1 else "NO_SUPERA_PF",
         "confidence": float(max(direction_proba)),
-        "predicted_return_pct": float(predicted_return * 100),
-        "predicted_price": float(predicted_price),
+        "predicted_return_30d_pct": float(predicted_return_30d * 100),
+        "predicted_price_30d": float(predicted_price_30d),
+        "pf_rate_pct": float(pf_rate * 100),
+        "breakeven": float(breakeven),
+        "recomendacion": "COMPRAR_DOLARES" if direction == 1 else "RENOVAR_PLAZO_FIJO",
     }
 
 
@@ -215,13 +223,15 @@ def train_full_pipeline():
 
     plot_feature_importance(clf, feature_cols)
 
-    print("\n--- Predicción para mañana ---")
+    print("\n--- Predicción a 30 días ---")
     prediction = predict_tomorrow(df, clf, reg)
-    print(f"\nPrecio actual:     ${prediction['current_price']:.2f}")
-    print(f"Dirección predicha: {prediction['predicted_direction']} "
+    print(f"\nPrecio actual:          ${prediction['current_price']:.2f}")
+    print(f"Dirección predicha:      {prediction['predicted_direction']} "
           f"(confianza: {prediction['confidence']:.1%})")
-    print(f"Retorno estimado:  {prediction['predicted_return_pct']:+.2f}%")
-    print(f"Precio estimado:   ${prediction['predicted_price']:.2f}")
+    print(f"Retorno estimado 30d:   {prediction['predicted_return_30d_pct']:+.2f}%")
+    print(f"Precio estimado 30d:    ${prediction['predicted_price_30d']:.2f}")
+    print(f"Break-even PF 2%:       ${prediction['breakeven']:.2f}")
+    print(f"Recomendación:          {prediction['recomendacion']}")
 
     return prediction
 

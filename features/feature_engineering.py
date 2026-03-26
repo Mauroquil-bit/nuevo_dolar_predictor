@@ -30,19 +30,43 @@ def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy().sort_values("date")
     price = df["buy"]
 
-    # Retornos
+    # Retornos de corto plazo
     df["return_1d"] = price.pct_change(1)
     df["return_3d"] = price.pct_change(3)
     df["return_7d"] = price.pct_change(7)
+
+    # Retornos de largo plazo
+    df["return_14d"] = price.pct_change(14)
+    df["return_30d"] = price.pct_change(30)
 
     # Volatilidad rolling
     df["volatility_7d"] = price.pct_change().rolling(7).std()
     df["volatility_14d"] = price.pct_change().rolling(14).std()
 
+    # Volatilidad de largo plazo
+    df["volatility_30d"] = price.pct_change().rolling(30).std()
+
     # Medias móviles
     df["ma_7d"] = price.rolling(7).mean()
     df["ma_14d"] = price.rolling(14).mean()
     df["ma_ratio"] = df["ma_7d"] / df["ma_14d"]
+
+    # Medias móviles de largo plazo
+    df["ma_30d"] = price.rolling(30).mean()
+    df["ma_ratio_30_7"] = df["ma_30d"] / df["ma_7d"]
+
+    # Posición del precio respecto a máximo/mínimo de 30 días
+    df["max_30d"] = price.rolling(30).max()
+    df["min_30d"] = price.rolling(30).min()
+    df["pct_from_max_30d"] = (price - df["max_30d"]) / df["max_30d"]
+    df["pct_from_min_30d"] = (price - df["min_30d"]) / df["min_30d"]
+
+    # Días consecutivos sin movimiento mayor al 1%
+    df["dias_quieto"] = (price.pct_change().abs() < 0.01).astype(int)
+    df["racha_quieta"] = df["dias_quieto"].groupby(
+        (df["dias_quieto"] != df["dias_quieto"].shift()).cumsum()
+    ).cumcount() + 1
+    df["racha_quieta"] = df["racha_quieta"] * df["dias_quieto"]
 
     # Spreads
     if "sell" in df.columns:
@@ -93,13 +117,20 @@ def add_news_features(df: pd.DataFrame, news_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_target(df: pd.DataFrame, horizon: int = 1) -> pd.DataFrame:
+def add_target(df: pd.DataFrame, horizon: int = 30, pf_rate: float = 0.02) -> pd.DataFrame:
     """
-    Agrega la variable target: variación porcentual del precio en N días.
-    target = 1 si el precio sube, 0 si baja o se mantiene.
+    Target principal: ¿sube el dólar más del 2% en 30 días?
+    - target_return_30d: retorno porcentual en 30 días
+    - target_direction_30d: 1 si sube más que el plazo fijo, 0 si no
+    - Mantiene también target_return (1 día) para compatibilidad
     """
     df = df.copy()
-    df["target_price"] = df["buy"].shift(-horizon)
+    # Target a N días (horizonte principal)
+    df["target_price_30d"] = df["buy"].shift(-horizon)
+    df["target_return_30d"] = df["target_price_30d"] / df["buy"] - 1
+    df["target_direction_30d"] = (df["target_return_30d"] > pf_rate).astype(int)
+    # Mantener target a 1 día para compatibilidad
+    df["target_price"] = df["buy"].shift(-1)
     df["target_return"] = df["target_price"] / df["buy"] - 1
     df["target_direction"] = (df["target_return"] > 0).astype(int)
     return df
@@ -109,7 +140,8 @@ def build_feature_matrix(
     dollar_df: pd.DataFrame,
     twitter_sentiment: pd.DataFrame = None,
     lanacion_news: pd.DataFrame = None,
-    horizon: int = 1,
+    horizon: int = 30,
+    pf_rate: float = 0.02,
 ) -> pd.DataFrame:
     """
     Pipeline completo de construcción de features.
@@ -117,18 +149,20 @@ def build_feature_matrix(
     df = add_price_features(dollar_df)
     df = add_sentiment_features(df, twitter_sentiment)
     df = add_news_features(df, lanacion_news)
-    df = add_target(df, horizon=horizon)
+    df = add_target(df, horizon=horizon, pf_rate=pf_rate)
 
     # Eliminar filas con NaN en columnas críticas
-    df = df.dropna(subset=["buy", "target_direction"])
+    df = df.dropna(subset=["buy", "target_direction_30d"])
 
     return df
 
 
 def get_feature_columns(df: pd.DataFrame) -> list[str]:
     """Retorna las columnas de features (excluye targets y metadatos)."""
-    exclude = {"date", "type", "timestamp", "target_price", "target_return",
-               "target_direction", "buy", "sell"}
+    exclude = {"date", "type", "timestamp",
+               "target_price", "target_return", "target_direction",
+               "target_price_30d", "target_return_30d", "target_direction_30d",
+               "buy", "sell", "dias_quieto", "max_30d", "min_30d", "ma_30d"}
     return [c for c in df.columns if c not in exclude and df[c].dtype in [np.float64, np.int64]]
 
 

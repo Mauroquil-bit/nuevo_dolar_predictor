@@ -152,13 +152,15 @@ def mode_predict():
     df = load_features()
     prediction = predict_tomorrow(df)
 
-    direction_color = GREEN if prediction["predicted_direction"] == "SUBE" else RED
-    print(f"  Fecha:             {prediction['date_predicted']}")
-    print(f"  Precio actual:     ${prediction['current_price']:.2f}")
-    print(f"  Dirección:         {direction_color}{prediction['predicted_direction']}{RESET} "
+    direction_color = GREEN if prediction["recomendacion"] == "COMPRAR_DOLARES" else RED
+    print(f"  Fecha:                  {prediction['date_predicted']}")
+    print(f"  Precio actual:          ${prediction['current_price']:.2f}")
+    print(f"  Dirección:              {direction_color}{prediction['predicted_direction']}{RESET} "
           f"(confianza: {prediction['confidence']:.1%})")
-    print(f"  Retorno estimado:  {prediction['predicted_return_pct']:+.2f}%")
-    print(f"  Precio estimado:   ${prediction['predicted_price']:.2f}")
+    print(f"  Retorno estimado 30d:  {prediction['predicted_return_30d_pct']:+.2f}%")
+    print(f"  Precio estimado 30d:   ${prediction['predicted_price_30d']:.2f}")
+    print(f"  Break-even PF 2%:       ${prediction['breakeven']:.2f}")
+    print(f"  Recomendación:          {direction_color}{prediction['recomendacion']}{RESET}")
 
     return prediction
 
@@ -213,7 +215,7 @@ def mode_demo():
 
     print(f"\n{YELLOW}Construyendo features...{RESET}")
     from features.feature_engineering import build_feature_matrix, save_features
-    df = build_feature_matrix(dollar_df, sentiment_data)
+    df = build_feature_matrix(dollar_df, sentiment_data, horizon=30)
     save_features(df)
 
     print(f"\n{YELLOW}Entrenando modelo...{RESET}")
