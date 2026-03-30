@@ -146,10 +146,14 @@ def render_html(prediction, dollar_df):
     else:
         precision_label = f"Precisión histórica: acumulando datos ({accuracy_data['total']} predicciones validadas)"
 
-    recomendar_pf = direction == "BAJA"
+    # La recomendación se basa en si el precio estimado supera el break-even
+    # Esto es más consistente que usar el clasificador, que puede contradecir al regresor
+    recomendar_pf = predicted_price < breakeven
+    display_direction = "SUBE" if ret_pct > 0 else "BAJA"
+    dir_icon = "📈" if ret_pct > 0 else "📉"
 
     # Condicionales de estilo
-    veredicto = "Hoy es buen momento para pasarte a plazo fijo" if recomendar_pf else "Quedá en dólares, no es momento de plazo fijo"
+    veredicto = "Hoy es buen momento para pasarte a plazo fijo" if recomendar_pf else "Quedate en dólares, no es momento de plazo fijo"
     veredicto_icon = "✅" if recomendar_pf else "⚠️"
     hero_class = "gradient-hero" if recomendar_pf else "gradient-hero-red"
     border_pred = "border-verde" if recomendar_pf else "border-rojo"
@@ -159,8 +163,7 @@ def render_html(prediction, dollar_df):
     alert_bg = "bg-green-50 border-green-200" if recomendar_pf else "bg-red-50 border-red-200"
     pulse_bg = "bg-verde" if recomendar_pf else "bg-rojo"
     pulse_class = "pulse-green" if recomendar_pf else "pulse-red"
-    improbable = "improbable" if recomendar_pf else "posible"
-    dir_icon = "📉" if recomendar_pf else "📈"
+    no_conviene_dolar = "no le gana al plazo fijo" if recomendar_pf else "le gana al plazo fijo"
 
     price_rows = build_price_rows(dollar_df, today)
 
@@ -257,7 +260,7 @@ def render_html(prediction, dollar_df):
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 {border_pred}">
           <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Estimado 30 días</div>
           <div class="text-3xl font-extrabold {text_pred}">{fmt(predicted_price)}</div>
-          <div class="text-sm text-gray-500">{dir_icon} {direction} en 30 días ({ret_pct:+.2f}%)</div>
+          <div class="text-sm text-gray-500">{dir_icon} {display_direction} en 30 días ({ret_pct:+.2f}%)</div>
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
           <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF {pf_monthly_rate*100:.2f}%/mes)</div>
@@ -266,10 +269,9 @@ def render_html(prediction, dollar_df):
         </div>
       </div>
       <p class="mt-4 text-sm text-gray-600 {alert_bg} border rounded-xl px-4 py-3">
-        {veredicto_icon} Para que <strong>mantener dólares sea mejor</strong>,
-        el blue comprador debe superar <strong>{fmt(breakeven)}</strong> en los próximos 30 días
-        (tasa plazo fijo: {pf_monthly_rate*100:.2f}% mensual).
-        El modelo dice que es <strong>{improbable}</strong>.
+        {veredicto_icon} El plazo fijo rinde <strong>{pf_monthly_rate*100:.2f}% mensual</strong> → break-even en <strong>{fmt(breakeven)}</strong>.
+        El modelo estima que el blue llegará a <strong>{fmt(predicted_price)}</strong> en 30 días,
+        lo que <strong>{no_conviene_dolar}</strong>.
       </p>
     </section>
 
@@ -284,7 +286,7 @@ def render_html(prediction, dollar_df):
         </div>
         <div class="mt-4 flex items-center gap-2 text-sm {text_pred} font-medium">
           <span class="{pulse_class} w-2 h-2 {pulse_bg} rounded-full inline-block"></span>
-          Estimación a 30 días: {direction} ({confidence:.0%} confianza)
+          Estimación a 30 días: {display_direction} ({ret_pct:+.2f}%)
         </div>
       </div>
     </section>
@@ -307,11 +309,11 @@ def render_html(prediction, dollar_df):
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">2.</span>
-              <span>Modelo predice {direction} con <strong class="text-white">{confidence:.0%} de confianza</strong></span>
+              <span>Precio estimado {display_direction} → <strong class="text-white">{fmt(predicted_price)}</strong> ({ret_pct:+.2f}%)</span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">3.</span>
-              <span>Break-even del plazo fijo 2%: <strong class="text-white">{fmt(breakeven)}</strong></span>
+              <span>Break-even del plazo fijo ({pf_monthly_rate*100:.2f}%/mes): <strong class="text-white">{fmt(breakeven)}</strong></span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">4.</span>
@@ -344,7 +346,9 @@ def main():
     current_price = prediction["current_price"]
     print(f"  Blue compra: {fmt(current_price)}")
     print(f"  Predicción 30d: {direction} ({confidence:.0%} confianza modelo)")
-    print(f"  Recomendación: {'Hoy es buen momento para pasarte a plazo fijo' if direction == 'BAJA' else 'Quedá en dólares, no es momento de plazo fijo'}")
+    ret_pct = prediction["predicted_return_pct"]
+    predicted_price = prediction["predicted_price"]
+    print(f"  Precio estimado 30d: ${predicted_price:.2f} ({ret_pct:+.2f}%)")
 
     save_prediction_to_history(prediction)
 
