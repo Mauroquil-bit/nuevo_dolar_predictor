@@ -6,6 +6,10 @@ load_dotenv()
 # X API
 X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN")
 
+# Estadísticas BCRA (tasa plazo fijo) — token gratuito en estadisticasbcra.com/api/registracion
+ESTADISTICAS_BCRA_TOKEN = os.getenv("ESTADISTICAS_BCRA_TOKEN", "")
+PF_MONTHLY_RATE_FALLBACK = 0.0210  # 25.1% TNA / 12 — actualizar si cambia mucho
+
 # Palabras clave para buscar en X
 X_KEYWORDS = [
     "dolar blue", "dolar hoy", "tipo de cambio",

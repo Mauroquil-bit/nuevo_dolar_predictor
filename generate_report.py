@@ -16,6 +16,9 @@ MESES = {
 }
 
 
+HISTORY_PATH = os.path.join("data", "predictions_history.csv")
+
+
 def get_prediction():
     from features.feature_engineering import load_dollar_history, build_feature_matrix
     from model import predict_horizon
@@ -31,6 +34,53 @@ def get_prediction():
     df = build_feature_matrix(dollar_df, twitter_sentiment, news_features)
     prediction = predict_horizon(df)
     return prediction, dollar_df
+
+
+def save_prediction_to_history(prediction: dict):
+    """Guarda la predicción del día en el historial para calcular precisión futura."""
+    today = date.today().isoformat()
+    row = pd.DataFrame([{
+        "date": today,
+        "current_price": prediction["current_price"],
+        "predicted_direction": prediction["predicted_direction"],
+        "predicted_price": prediction["predicted_price"],
+        "confidence": prediction["confidence"],
+    }])
+    if os.path.exists(HISTORY_PATH):
+        history = pd.read_csv(HISTORY_PATH)
+        if today in history["date"].values:
+            return  # Ya existe la entrada de hoy
+        history = pd.concat([history, row], ignore_index=True)
+    else:
+        history = row
+    os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+    history.to_csv(HISTORY_PATH, index=False)
+
+
+def calculate_accuracy(dollar_df: pd.DataFrame) -> dict:
+    """Calcula la precisión histórica comparando predicciones pasadas con resultados reales."""
+    if not os.path.exists(HISTORY_PATH):
+        return {"total": 0, "correct": 0, "accuracy": None}
+
+    history = pd.read_csv(HISTORY_PATH, parse_dates=["date"])
+    dollar_df = dollar_df.copy()
+    dollar_df["date"] = pd.to_datetime(dollar_df["date"])
+
+    correct = 0
+    total = 0
+    for _, row in history.iterrows():
+        target_date = row["date"] + pd.Timedelta(days=30)
+        actual = dollar_df[dollar_df["date"] >= target_date]
+        if actual.empty:
+            continue  # Todavía no pasaron 30 días
+        actual_price = actual.iloc[0]["buy"]
+        actual_direction = "SUBE" if actual_price > row["current_price"] else "BAJA"
+        total += 1
+        if actual_direction == row["predicted_direction"]:
+            correct += 1
+
+    accuracy = correct / total if total > 0 else None
+    return {"total": total, "correct": correct, "accuracy": accuracy}
 
 
 def fmt(p):
@@ -74,6 +124,8 @@ def build_price_rows(dollar_df, today):
 
 
 def render_html(prediction, dollar_df):
+    from collectors.rates_collector import fetch_pf_monthly_rate
+
     today = date.today()
     dia = today.day
     mes = MESES[today.month]
@@ -85,8 +137,16 @@ def render_html(prediction, dollar_df):
     predicted_price = prediction["predicted_price"]
     ret_pct = prediction["predicted_return_pct"]
 
+    pf_monthly_rate = fetch_pf_monthly_rate()
+    breakeven = current_price * (1 + pf_monthly_rate)
+
+    accuracy_data = calculate_accuracy(dollar_df)
+    if accuracy_data["accuracy"] is not None:
+        precision_label = f"Precisión histórica: {accuracy_data['accuracy']:.0%} ({accuracy_data['correct']}/{accuracy_data['total']} predicciones)"
+    else:
+        precision_label = f"Precisión histórica: acumulando datos ({accuracy_data['total']} predicciones validadas)"
+
     recomendar_pf = direction == "BAJA"
-    breakeven = current_price * 1.02
 
     # Condicionales de estilo
     veredicto = "Hoy es buen momento para pasarte a plazo fijo" if recomendar_pf else "Quedá en dólares, no es momento de plazo fijo"
@@ -175,7 +235,7 @@ def render_html(prediction, dollar_df):
         <div>
           <div class="text-xs font-semibold uppercase tracking-widest text-blue-200">Recomendación de hoy</div>
           <div class="text-2xl font-extrabold text-white">{veredicto}</div>
-          <div class="text-blue-200 text-sm">Confianza: {confidence:.0%} · Modelo: XGBoost + NLP</div>
+          <div class="text-blue-200 text-sm">{precision_label} · XGBoost + NLP</div>
         </div>
       </div>
     </div>
@@ -200,14 +260,15 @@ def render_html(prediction, dollar_df):
           <div class="text-sm text-gray-500">{dir_icon} {direction} en 30 días ({ret_pct:+.2f}%)</div>
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
-          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF 2%)</div>
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF {pf_monthly_rate*100:.2f}%/mes)</div>
           <div class="text-3xl font-extrabold text-amarillo">{fmt(breakeven)}</div>
           <div class="text-sm text-gray-500">El blue debe superar esto en 30 días</div>
         </div>
       </div>
       <p class="mt-4 text-sm text-gray-600 {alert_bg} border rounded-xl px-4 py-3">
         {veredicto_icon} Para que <strong>mantener dólares sea mejor</strong>,
-        el blue comprador debe superar <strong>{fmt(breakeven)}</strong> en los próximos 30 días.
+        el blue comprador debe superar <strong>{fmt(breakeven)}</strong> en los próximos 30 días
+        (tasa plazo fijo: {pf_monthly_rate*100:.2f}% mensual).
         El modelo dice que es <strong>{improbable}</strong>.
       </p>
     </section>
@@ -282,8 +343,10 @@ def main():
     confidence = prediction["confidence"]
     current_price = prediction["current_price"]
     print(f"  Blue compra: {fmt(current_price)}")
-    print(f"  Predicción: {direction} ({confidence:.0%} confianza)")
+    print(f"  Predicción 30d: {direction} ({confidence:.0%} confianza modelo)")
     print(f"  Recomendación: {'Hoy es buen momento para pasarte a plazo fijo' if direction == 'BAJA' else 'Quedá en dólares, no es momento de plazo fijo'}")
+
+    save_prediction_to_history(prediction)
 
     html = render_html(prediction, dollar_df)
 
