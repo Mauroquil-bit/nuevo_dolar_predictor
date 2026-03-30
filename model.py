@@ -215,13 +215,13 @@ def train_full_pipeline():
 
     plot_feature_importance(clf, feature_cols)
 
-    print("\n--- Predicción para mañana ---")
-    prediction = predict_tomorrow(df, clf, reg)
-    print(f"\nPrecio actual:     ${prediction['current_price']:.2f}")
-    print(f"Dirección predicha: {prediction['predicted_direction']} "
+    print("\n--- Estimación a 30 días ---")
+    prediction = predict_horizon(df, clf, reg)
+    print(f"\nPrecio actual:        ${prediction['current_price']:.2f}")
+    print(f"Dirección predicha:   {prediction['predicted_direction']} "
           f"(confianza: {prediction['confidence']:.1%})")
-    print(f"Retorno estimado:  {prediction['predicted_return_pct']:+.2f}%")
-    print(f"Precio estimado:   ${prediction['predicted_price']:.2f}")
+    print(f"Retorno estimado 30d: {prediction['predicted_return_pct']:+.2f}%")
+    print(f"Precio estimado 30d:  ${prediction['predicted_price']:.2f}")
 
     return prediction
 
