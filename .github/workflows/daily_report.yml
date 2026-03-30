@@ -33,6 +33,8 @@ jobs:
 
       - name: Generar reporte HTML
         run: python generate_report.py
+        env:
+          ESTADISTICAS_BCRA_TOKEN: ${{ secrets.ESTADISTICAS_BCRA_TOKEN }}
 
       - name: Commit y push del reporte actualizado
         run: |
