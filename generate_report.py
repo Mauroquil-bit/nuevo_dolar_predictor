@@ -328,7 +328,7 @@ def render_html(prediction, dollar_df):
     <footer class="text-center text-xs text-gray-400 pt-4 pb-8 border-t border-gray-100">
       <p class="mb-1">⚠️ Análisis de datos automatizado. No constituye asesoramiento financiero profesional.</p>
       <p>Generado por <strong class="text-gray-500">Dólar Predictor</strong> ·
-        XGBoost + Sentimiento NLP · Fuente: dolarapi.com, Bluelytics</p>
+        XGBoost + Sentimiento NLP · Fuentes: dolarapi.com, Bluelytics, BCRA (estadisticasbcra.com)</p>
       <p class="mt-1 text-gray-300">Actualizado: {dia} de {mes} de {anio}</p>
     </footer>
 
