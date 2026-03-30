@@ -147,10 +147,10 @@ def mode_predict():
     """Genera predicción con el modelo guardado."""
     print_header("PREDICCIÓN")
 
-    from model import load_features, prepare_data, predict_tomorrow, load_model
+    from model import load_features, prepare_data, predict_horizon, load_model
 
     df = load_features()
-    prediction = predict_tomorrow(df)
+    prediction = predict_horizon(df)
 
     direction_color = GREEN if prediction["predicted_direction"] == "SUBE" else RED
     print(f"  Fecha:             {prediction['date_predicted']}")

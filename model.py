@@ -164,9 +164,9 @@ def load_model(name: str):
     return model
 
 
-def predict_tomorrow(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
+def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
     """
-    Genera predicción para el día siguiente usando la última fila disponible.
+    Genera predicción para el horizonte configurado (30 días) usando la última fila disponible.
     """
     if classifier is None:
         classifier = load_model("classifier")

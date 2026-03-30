@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import PROCESSED_DIR, LOOKBACK_DAYS, TARGET_DOLAR
+from config import PROCESSED_DIR, LOOKBACK_DAYS, TARGET_DOLAR, PREDICTION_HORIZON
 
 
 def load_dollar_history(filepath: str = None) -> pd.DataFrame:
@@ -109,7 +109,7 @@ def build_feature_matrix(
     dollar_df: pd.DataFrame,
     twitter_sentiment: pd.DataFrame = None,
     lanacion_news: pd.DataFrame = None,
-    horizon: int = 1,
+    horizon: int = PREDICTION_HORIZON,
 ) -> pd.DataFrame:
     """
     Pipeline completo de construcción de features.

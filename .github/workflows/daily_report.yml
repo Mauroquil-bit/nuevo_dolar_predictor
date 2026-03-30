@@ -3,7 +3,7 @@ name: Reporte diario dólar blue
 on:
   schedule:
     # 12:00 UTC = 9:00 AM Argentina (ART = UTC-3)
-    - cron: "0 12 * * 1-5"   # lunes a viernes
+    - cron: "0 12 * * *"     # todos los días, incluido fines de semana
   workflow_dispatch:           # también se puede disparar a mano desde GitHub
 
 jobs:

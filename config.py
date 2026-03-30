@@ -38,5 +38,5 @@ MODELS_DIR = "models_saved"
 
 # Modelo
 TARGET_DOLAR = "blue"  # opciones: blue, mep, ccl, oficial
-PREDICTION_HORIZON = 1  # días hacia adelante a predecir
+PREDICTION_HORIZON = 30  # días hacia adelante a predecir
 LOOKBACK_DAYS = 7       # días de historia para features
