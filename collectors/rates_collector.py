@@ -10,17 +10,11 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def fetch_pf_monthly_rate() -> float:
-    """
-    Retorna la tasa mensual de plazo fijo 30 días (ej: 0.0209 = 2.09%).
-    Fuente: api.estadisticasbcra.com → variable tasa_depositos_30_dias (TNA%).
-    Fallback: valor configurado en PF_MONTHLY_RATE_FALLBACK.
-    """
+def fetch_bcra_monthly_rate() -> float:
+    """Tasa del BCRA a 30 días (promedio del sistema bancario, no lo que recibe el ahorrista común)."""
     from config import ESTADISTICAS_BCRA_TOKEN, PF_MONTHLY_RATE_FALLBACK
 
     if not ESTADISTICAS_BCRA_TOKEN:
-        print(f"  Tasa PF: usando fallback {PF_MONTHLY_RATE_FALLBACK*100:.2f}% mensual "
-              f"(configurar ESTADISTICAS_BCRA_TOKEN para dato real)")
         return PF_MONTHLY_RATE_FALLBACK
 
     try:
@@ -31,11 +25,18 @@ def fetch_pf_monthly_rate() -> float:
         )
         resp.raise_for_status()
         data = resp.json()
-        # La API retorna lista de {"d": "YYYY-MM-DD", "v": TNA_porcentaje}
-        latest_tna_pct = data[-1]["v"]  # ej: 25.10
-        monthly_rate = latest_tna_pct / 100 / 12
-        print(f"  Tasa PF: {latest_tna_pct:.2f}% TNA → {monthly_rate*100:.2f}% mensual")
-        return monthly_rate
-    except Exception as e:
-        print(f"  Tasa PF: error al obtener dato real ({e}). Usando fallback {PF_MONTHLY_RATE_FALLBACK*100:.2f}%")
+        latest_tna_pct = data[-1]["v"]
+        return latest_tna_pct / 100 / 365 * 30
+    except Exception:
         return PF_MONTHLY_RATE_FALLBACK
+
+
+def fetch_galicia_monthly_rate() -> float:
+    """Tasa real Banco Galicia para ahorristas: 21% anual / 365 * 30 días."""
+    from config import PF_GALICIA_MONTHLY_RATE
+    return PF_GALICIA_MONTHLY_RATE
+
+
+# Mantener nombre anterior para no romper código existente
+def fetch_pf_monthly_rate() -> float:
+    return fetch_bcra_monthly_rate()

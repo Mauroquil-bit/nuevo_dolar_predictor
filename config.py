@@ -8,7 +8,8 @@ X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN")
 
 # Estadísticas BCRA (tasa plazo fijo) — token gratuito en estadisticasbcra.com/api/registracion
 ESTADISTICAS_BCRA_TOKEN = os.getenv("ESTADISTICAS_BCRA_TOKEN", "")
-PF_MONTHLY_RATE_FALLBACK = 0.0210  # 25.1% TNA / 12 — actualizar si cambia mucho
+PF_GALICIA_MONTHLY_RATE  = 21 / 100 / 365 * 30   # 21% anual Galicia minoristas
+PF_MONTHLY_RATE_FALLBACK = 25 / 100 / 365 * 30   # ~25% TNA BCRA fallback
 
 # Palabras clave para buscar en X
 X_KEYWORDS = [

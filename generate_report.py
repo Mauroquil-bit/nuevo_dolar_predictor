@@ -124,7 +124,7 @@ def build_price_rows(dollar_df, today):
 
 
 def render_html(prediction, dollar_df):
-    from collectors.rates_collector import fetch_pf_monthly_rate
+    from collectors.rates_collector import fetch_bcra_monthly_rate, fetch_galicia_monthly_rate
 
     today = date.today()
     dia = today.day
@@ -137,8 +137,9 @@ def render_html(prediction, dollar_df):
     predicted_price = prediction["predicted_price"]
     ret_pct = prediction["predicted_return_pct"]
 
-    pf_monthly_rate = fetch_pf_monthly_rate()
-    breakeven = current_price * (1 + pf_monthly_rate)
+    pf_galicia_rate = fetch_galicia_monthly_rate()   # lo que realmente te da el banco
+    pf_bcra_rate    = fetch_bcra_monthly_rate()      # lo que publica el BCRA
+    breakeven = current_price * (1 + pf_galicia_rate)
 
     accuracy_data = calculate_accuracy(dollar_df)
     if accuracy_data["accuracy"] is not None:
@@ -148,7 +149,7 @@ def render_html(prediction, dollar_df):
 
     # La recomendación se basa en si el precio estimado supera el break-even
     # Esto es más consistente que usar el clasificador, que puede contradecir al regresor
-    recomendar_pf = predicted_price < breakeven
+    recomendar_pf = predicted_price < breakeven  # basado en tasa real Galicia
     display_direction = "SUBE" if ret_pct > 0 else "BAJA"
     dir_icon = "📈" if ret_pct > 0 else "📉"
 
@@ -263,15 +264,19 @@ def render_html(prediction, dollar_df):
           <div class="text-sm text-gray-500">{dir_icon} {display_direction} en 30 días ({ret_pct:+.2f}%)</div>
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
-          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even (PF {pf_monthly_rate*100:.2f}%/mes)</div>
+          <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even del plazo fijo</div>
           <div class="text-3xl font-extrabold text-amarillo">{fmt(breakeven)}</div>
-          <div class="text-sm text-gray-500">El blue debe superar esto en 30 días</div>
+          <div class="text-sm text-gray-500">El blue tiene que superar esto en 30 días</div>
+          <div class="mt-2 space-y-0.5 text-xs">
+            <div class="text-gray-500">🏦 Galicia (ahorristas): <strong>{pf_galicia_rate*100:.2f}% en 30 días</strong> (21% anual)</div>
+            <div class="text-gray-400">📋 BCRA (sistema bancario): {pf_bcra_rate*100:.2f}% en 30 días</div>
+          </div>
         </div>
       </div>
       <p class="mt-4 text-sm text-gray-600 {alert_bg} border rounded-xl px-4 py-3">
-        {veredicto_icon} El plazo fijo rinde <strong>{pf_monthly_rate*100:.2f}% mensual</strong> → break-even en <strong>{fmt(breakeven)}</strong>.
-        El modelo estima que el blue llegará a <strong>{fmt(predicted_price)}</strong> en 30 días,
-        lo que <strong>{no_conviene_dolar}</strong>.
+        {veredicto_icon} El Banco Galicia te paga <strong>{pf_galicia_rate*100:.2f}% en 30 días</strong> (21% anual, lo que recibe el ahorrista común).
+        Para que te convenga el plazo fijo, el dólar blue tiene que estar por debajo de <strong>{fmt(breakeven)}</strong> en 30 días.
+        El modelo estima que llegará a <strong>{fmt(predicted_price)}</strong>, lo que <strong>{no_conviene_dolar}</strong>.
       </p>
     </section>
 
@@ -313,7 +318,7 @@ def render_html(prediction, dollar_df):
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">3.</span>
-              <span>Break-even del plazo fijo ({pf_monthly_rate*100:.2f}%/mes): <strong class="text-white">{fmt(breakeven)}</strong></span>
+              <span>Galicia te paga {pf_galicia_rate*100:.2f}% en 30 días (21% anual) → break-even: <strong class="text-white">{fmt(breakeven)}</strong></span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">4.</span>
