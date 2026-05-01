@@ -87,6 +87,60 @@ def fmt(p):
     return f"${p:,.0f}".replace(",", ".")
 
 
+def build_prediction_history_rows(dollar_df):
+    """Genera filas con historial de predicciones y resultado (correcto/incorrecto/pendiente)."""
+    if not os.path.exists(HISTORY_PATH):
+        return '<div class="text-gray-400 text-sm py-4 text-center">Sin historial todavía.</div>', 0, 0
+
+    history = pd.read_csv(HISTORY_PATH, parse_dates=["date"])
+    df = dollar_df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+
+    recent = history.tail(30).iloc[::-1].reset_index(drop=True)
+    rows = ""
+    correct = 0
+    validated = 0
+
+    for _, row in recent.iterrows():
+        date_str = row["date"].strftime("%d/%m")
+        pred_dir = row["predicted_direction"]
+        pred_price = row["predicted_price"]
+        current = row["current_price"]
+        target_date = row["date"] + pd.Timedelta(days=30)
+        actual = df[df["date"] >= target_date]
+
+        if actual.empty:
+            status_html = '<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-medium">⏳ Pendiente</span>'
+            actual_price_str = "—"
+            row_bg = ""
+        else:
+            actual_price = actual.iloc[0]["buy"]
+            actual_direction = "SUBE" if actual_price > current else "BAJA"
+            actual_price_str = fmt(actual_price)
+            validated += 1
+            if actual_direction == pred_dir:
+                status_html = '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">✅ Correcto</span>'
+                row_bg = "bg-green-50"
+                correct += 1
+            else:
+                status_html = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">❌ Incorrecto</span>'
+                row_bg = "bg-red-50"
+
+        dir_icon = "📈" if pred_dir == "SUBE" else "📉"
+        dir_color = "text-red-500" if pred_dir == "SUBE" else "text-green-600"
+
+        rows += f"""
+          <div class="grid grid-cols-5 gap-1 py-2 border-b border-gray-100 last:border-0 items-center {row_bg} px-2 rounded">
+            <span class="text-gray-500 font-mono text-xs">{date_str}</span>
+            <span class="{dir_color} font-semibold text-xs">{dir_icon} {pred_dir}</span>
+            <span class="text-gray-600 font-mono text-xs">{fmt(pred_price)}</span>
+            <span class="text-gray-600 font-mono text-xs">{actual_price_str}</span>
+            <div>{status_html}</div>
+          </div>"""
+
+    return rows, correct, validated
+
+
 def build_price_rows(dollar_df, today):
     recent = dollar_df.tail(7).copy().reset_index(drop=True)
     rows = ""
@@ -167,6 +221,11 @@ def render_html(prediction, dollar_df):
     no_conviene_dolar = "no le gana al plazo fijo" if recomendar_pf else "le gana al plazo fijo"
 
     price_rows = build_price_rows(dollar_df, today)
+    prediction_rows, pred_correct, pred_validated = build_prediction_history_rows(dollar_df)
+    if pred_validated > 0:
+        pred_summary = f"{pred_correct} de {pred_validated} predicciones validadas correctamente ({pred_correct/pred_validated:.0%})"
+    else:
+        pred_summary = "Sin predicciones validadas aún (se validan a los 30 días de cada predicción)"
 
     return f"""<!DOCTYPE html>
 <html lang="es">
@@ -292,6 +351,26 @@ def render_html(prediction, dollar_df):
         <div class="mt-4 flex items-center gap-2 text-sm {text_pred} font-medium">
           <span class="{pulse_class} w-2 h-2 {pulse_bg} rounded-full inline-block"></span>
           Estimación a 30 días: {display_direction} ({ret_pct:+.2f}%)
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL DE PREDICCIONES -->
+    <section>
+      <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
+        <span class="text-3xl">📋</span> Historial de predicciones (últimos 30 días)
+      </h2>
+      <div class="bg-white rounded-2xl card-shadow p-6">
+        <div class="grid grid-cols-5 gap-1 py-2 border-b-2 border-gray-200 text-xs text-gray-400 uppercase font-semibold tracking-wide px-2 mb-1">
+          <span>Fecha</span>
+          <span>Dirección</span>
+          <span>Estimado</span>
+          <span>Real (30d)</span>
+          <span>Resultado</span>
+        </div>
+        {prediction_rows}
+        <div class="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-600 font-medium">
+          📊 {pred_summary}
         </div>
       </div>
     </section>
