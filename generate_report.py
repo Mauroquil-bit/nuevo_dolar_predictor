@@ -96,7 +96,7 @@ def build_prediction_history_rows(dollar_df):
     df = dollar_df.copy()
     df["date"] = pd.to_datetime(df["date"])
 
-    recent = history.tail(30).iloc[::-1].reset_index(drop=True)
+    recent = history.sort_values("date").reset_index(drop=True)
     rows = ""
     correct = 0
     validated = 0
@@ -358,7 +358,7 @@ def render_html(prediction, dollar_df):
     <!-- HISTORIAL DE PREDICCIONES -->
     <section>
       <h2 class="text-2xl font-bold text-azul mb-6 flex items-center gap-2">
-        <span class="text-3xl">📋</span> Historial de predicciones (últimos 30 días)
+        <span class="text-3xl">📋</span> Historial de predicciones — ¿acertamos?
       </h2>
       <div class="bg-white rounded-2xl card-shadow p-6">
         <div class="grid grid-cols-5 gap-1 py-2 border-b-2 border-gray-200 text-xs text-gray-400 uppercase font-semibold tracking-wide px-2 mb-1">
