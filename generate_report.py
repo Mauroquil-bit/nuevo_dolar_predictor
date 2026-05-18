@@ -150,13 +150,21 @@ def build_prediction_history_rows(dollar_df):
             actual_price = actual.iloc[0]["buy"]
             actual_direction = "SUBE" if actual_price > current else "BAJA"
             actual_price_str = fmt(actual_price)
+            price_error = actual_price - pred_price
+            error_str = f"{price_error:+.0f}"
             validated += 1
             if actual_direction == pred_dir:
-                status_html = '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">✅ Correcto</span>'
+                status_html = (
+                    f'<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium">✅ Dir. OK</span>'
+                    f'<span class="block text-xs text-gray-400 mt-0.5">precio: {error_str}</span>'
+                )
                 row_bg = "bg-green-50"
                 correct += 1
             else:
-                status_html = '<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">❌ Incorrecto</span>'
+                status_html = (
+                    f'<span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">❌ Dir. mal</span>'
+                    f'<span class="block text-xs text-gray-400 mt-0.5">precio: {error_str}</span>'
+                )
                 row_bg = "bg-red-50"
 
         dir_icon = "📈" if pred_dir == "SUBE" else "📉"
@@ -230,9 +238,9 @@ def render_html(prediction, dollar_df):
 
     accuracy_data = calculate_accuracy(dollar_df)
     if accuracy_data["accuracy"] is not None:
-        precision_label = f"Precisión histórica: {accuracy_data['accuracy']:.0%} ({accuracy_data['correct']}/{accuracy_data['total']} predicciones)"
+        precision_label = f"Dirección correcta: {accuracy_data['accuracy']:.0%} ({accuracy_data['correct']}/{accuracy_data['total']} pred.)"
     else:
-        precision_label = f"Precisión histórica: acumulando datos ({accuracy_data['total']} predicciones validadas)"
+        precision_label = f"Dirección: acumulando datos ({accuracy_data['total']} pred. validadas)"
 
     # La recomendación se basa en si el precio estimado supera el break-even
     # Esto es más consistente que usar el clasificador, que puede contradecir al regresor
@@ -256,7 +264,7 @@ def render_html(prediction, dollar_df):
     price_rows = build_price_rows(dollar_df, today)
     prediction_rows, pred_correct, pred_validated = build_prediction_history_rows(dollar_df)
     if pred_validated > 0:
-        pred_summary = f"{pred_correct} de {pred_validated} predicciones validadas correctamente ({pred_correct/pred_validated:.0%})"
+        pred_summary = f"{pred_correct} de {pred_validated} predicciones con dirección correcta ({pred_correct/pred_validated:.0%}) — el error de precio puede ser alto aunque la dirección sea correcta"
     else:
         pred_summary = "Sin predicciones validadas aún (se validan a los 30 días de cada predicción)"
 
