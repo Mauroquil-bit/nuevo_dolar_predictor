@@ -50,9 +50,8 @@ def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ma_7d_dist"] = (price - ma_7d) / ma_7d
     df["ma_14d_dist"] = (price - ma_14d) / ma_14d
 
-    # Spreads
-    if "sell" in df.columns:
-        df["spread_pct"] = (df["sell"] - df["buy"]) / df["buy"]
+    # Spread excluido: el spread nominal ($20) fue constante en todo el período
+    # entrenado, por lo que spread_pct ≈ 1/buy y actúa como proxy del nivel de precio.
 
     # Lags de retornos diarios (no del precio absoluto)
     for lag in range(1, LOOKBACK_DAYS + 1):

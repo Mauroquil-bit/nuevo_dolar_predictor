@@ -48,11 +48,13 @@ def prepare_data(df: pd.DataFrame):
 def train_classifier(X: pd.DataFrame, y: pd.Series) -> tuple:
     """Entrena clasificador XGBoost con validación temporal."""
     model = XGBClassifier(
-        n_estimators=200,
-        max_depth=4,
+        n_estimators=100,
+        max_depth=3,
         learning_rate=0.05,
         subsample=0.8,
         colsample_bytree=0.8,
+        min_child_weight=10,
+        gamma=0.1,
         eval_metric="logloss",
         random_state=42,
     )
@@ -86,11 +88,13 @@ def train_regressor(X: pd.DataFrame, y: pd.Series) -> tuple:
     y = y[valid]
 
     model = XGBRegressor(
-        n_estimators=200,
-        max_depth=4,
+        n_estimators=100,
+        max_depth=3,
         learning_rate=0.05,
         subsample=0.8,
         colsample_bytree=0.8,
+        min_child_weight=10,
+        gamma=0.1,
         random_state=42,
     )
 
