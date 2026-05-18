@@ -19,6 +19,39 @@ MESES = {
 HISTORY_PATH = os.path.join("data", "predictions_history.csv")
 
 
+MODEL_MAX_AGE_DAYS = 7
+
+
+def maybe_retrain():
+    """Reentrenan el modelo si tiene más de MODEL_MAX_AGE_DAYS días o no existe."""
+    from config import MODELS_DIR, PROCESSED_DIR
+    from features.feature_engineering import load_dollar_history, build_feature_matrix, save_features
+
+    clf_files = sorted([f for f in os.listdir(MODELS_DIR) if f.startswith("classifier")]) if os.path.isdir(MODELS_DIR) else []
+
+    needs_retrain = not clf_files
+    if not needs_retrain:
+        from datetime import datetime
+        model_path = os.path.join(MODELS_DIR, clf_files[-1])
+        age_days = (datetime.now() - datetime.fromtimestamp(os.path.getmtime(model_path))).days
+        needs_retrain = age_days >= MODEL_MAX_AGE_DAYS
+        if needs_retrain:
+            print(f"  Modelo tiene {age_days} días → reentrenando...")
+
+    if needs_retrain:
+        dollar_df = load_dollar_history()
+        twitter_path = os.path.join(PROCESSED_DIR, "twitter_sentiment.csv")
+        news_path = os.path.join(PROCESSED_DIR, "news_features.csv")
+        twitter_sentiment = pd.read_csv(twitter_path, parse_dates=["date"]) if os.path.exists(twitter_path) else None
+        news_features_df = pd.read_csv(news_path, parse_dates=["date"]) if os.path.exists(news_path) else None
+
+        df = build_feature_matrix(dollar_df, twitter_sentiment, news_features_df)
+        save_features(df)
+
+        from model import train_full_pipeline
+        train_full_pipeline()
+
+
 def get_prediction():
     from features.feature_engineering import load_dollar_history, build_feature_matrix
     from model import predict_horizon
@@ -423,6 +456,7 @@ def render_html(prediction, dollar_df):
 
 def main():
     print("Generando reporte diario...")
+    maybe_retrain()
     prediction, dollar_df = get_prediction()
 
     direction = prediction["predicted_direction"]

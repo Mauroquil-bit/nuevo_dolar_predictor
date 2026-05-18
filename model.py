@@ -36,11 +36,12 @@ def load_features(filepath: str = None) -> pd.DataFrame:
 
 
 def prepare_data(df: pd.DataFrame):
-    """Prepara X e y para entrenamiento."""
+    """Prepara X e y para entrenamiento, excluyendo filas sin target futuro."""
     feature_cols = get_feature_columns(df)
-    X = df[feature_cols].fillna(0)
-    y_class = df["target_direction"]
-    y_reg = df["target_return"]
+    train_df = df.dropna(subset=["target_return"])
+    X = train_df[feature_cols].fillna(0)
+    y_class = train_df["target_direction"].astype(int)
+    y_reg = train_df["target_return"]
     return X, y_class, y_reg, feature_cols
 
 

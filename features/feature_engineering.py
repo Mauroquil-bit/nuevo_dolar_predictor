@@ -26,32 +26,37 @@ def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     """Agrega features técnicas de serie temporal de precios.
     Usa el precio comprador (buy) ya que es el precio que recibe el usuario
     cuando vende dólares (ej: para pasarlos a plazo fijo).
+    Todas las features son relativas (retornos, ratios) para evitar sesgo
+    de régimen: el modelo no debe confundir "primera vez en $1.400 subiendo"
+    con "plateau en $1.400".
     """
     df = df.copy().sort_values("date")
     price = df["buy"]
+    daily_return = price.pct_change()
 
     # Retornos
-    df["return_1d"] = price.pct_change(1)
+    df["return_1d"] = daily_return
     df["return_3d"] = price.pct_change(3)
     df["return_7d"] = price.pct_change(7)
 
     # Volatilidad rolling
-    df["volatility_7d"] = price.pct_change().rolling(7).std()
-    df["volatility_14d"] = price.pct_change().rolling(14).std()
+    df["volatility_7d"] = daily_return.rolling(7).std()
+    df["volatility_14d"] = daily_return.rolling(14).std()
 
-    # Medias móviles
-    df["ma_7d"] = price.rolling(7).mean()
-    df["ma_14d"] = price.rolling(14).mean()
-    df["ma_ratio"] = df["ma_7d"] / df["ma_14d"]
+    # Medias móviles — como ratio y desviación relativa, no nivel absoluto
+    ma_7d = price.rolling(7).mean()
+    ma_14d = price.rolling(14).mean()
+    df["ma_ratio"] = ma_7d / ma_14d
+    df["ma_7d_dist"] = (price - ma_7d) / ma_7d
+    df["ma_14d_dist"] = (price - ma_14d) / ma_14d
 
     # Spreads
     if "sell" in df.columns:
-        df["spread"] = df["sell"] - df["buy"]
-        df["spread_pct"] = df["spread"] / df["buy"]
+        df["spread_pct"] = (df["sell"] - df["buy"]) / df["buy"]
 
-    # Lags del precio comprador
+    # Lags de retornos diarios (no del precio absoluto)
     for lag in range(1, LOOKBACK_DAYS + 1):
-        df[f"buy_lag_{lag}"] = price.shift(lag)
+        df[f"return_lag_{lag}"] = daily_return.shift(lag)
 
     return df
 
@@ -96,12 +101,18 @@ def add_news_features(df: pd.DataFrame, news_df: pd.DataFrame) -> pd.DataFrame:
 def add_target(df: pd.DataFrame, horizon: int = 1) -> pd.DataFrame:
     """
     Agrega la variable target: variación porcentual del precio en N días.
-    target = 1 si el precio sube, 0 si baja o se mantiene.
+    target_direction = 1 si sube, 0 si baja/estable, NaN si no hay precio futuro.
+    Las filas sin precio futuro (últimas `horizon`) se excluyen del entrenamiento
+    pero se mantienen para poder predecir sobre la última fila disponible.
     """
     df = df.copy()
     df["target_price"] = df["buy"].shift(-horizon)
     df["target_return"] = df["target_price"] / df["buy"] - 1
-    df["target_direction"] = (df["target_return"] > 0).astype(int)
+    df["target_direction"] = np.where(
+        df["target_return"].isna(),
+        np.nan,
+        (df["target_return"] > 0).astype(float),
+    )
     return df
 
 
@@ -119,8 +130,9 @@ def build_feature_matrix(
     df = add_news_features(df, lanacion_news)
     df = add_target(df, horizon=horizon)
 
-    # Eliminar filas con NaN en columnas críticas
-    df = df.dropna(subset=["buy", "target_direction"])
+    # Solo eliminar filas sin precio de compra; las filas sin target futuro
+    # se mantienen para poder predecir sobre la última fila del dataset.
+    df = df.dropna(subset=["buy"])
 
     return df
 
