@@ -231,6 +231,10 @@ def render_html(prediction, dollar_df):
     confidence = prediction["confidence"]
     predicted_price = prediction["predicted_price"]
     ret_pct = prediction["predicted_return_pct"]
+    price_low = prediction.get("predicted_price_low", predicted_price)
+    price_high = prediction.get("predicted_price_high", predicted_price)
+    mae_pct = prediction.get("mae_return_pct", 0.0)
+    has_band = mae_pct > 0
 
     pf_galicia_rate = fetch_galicia_monthly_rate()   # lo que realmente te da el banco
     pf_bcra_rate    = fetch_bcra_monthly_rate()      # lo que publica el BCRA
@@ -362,6 +366,7 @@ def render_html(prediction, dollar_df):
           <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Estimado 30 días</div>
           <div class="text-3xl font-extrabold {text_pred}">{fmt(predicted_price)}</div>
           <div class="text-sm text-gray-500">{dir_icon} {display_direction} en 30 días ({ret_pct:+.2f}%)</div>
+          {f'<div class="text-xs text-gray-400 mt-2">Rango esperado: <strong class="text-gray-600">{fmt(price_low)} – {fmt(price_high)}</strong> (±{mae_pct:.2f}% MAE hist.)</div>' if has_band else ''}
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
           <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Break-even del plazo fijo</div>
@@ -434,7 +439,7 @@ def render_html(prediction, dollar_df):
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">2.</span>
-              <span>Precio estimado {display_direction} → <strong class="text-white">{fmt(predicted_price)}</strong> ({ret_pct:+.2f}%)</span>
+              <span>Precio estimado {display_direction} → <strong class="text-white">{fmt(predicted_price)}</strong> ({ret_pct:+.2f}%){f' · rango {fmt(price_low)}–{fmt(price_high)}' if has_band else ''}</span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">3.</span>

@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 import pickle
+import json
 from datetime import datetime
 
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
@@ -20,6 +21,11 @@ import seaborn as sns
 
 from config import MODELS_DIR, PROCESSED_DIR
 from features.feature_engineering import get_feature_columns
+
+# Half-life de los pesos exponenciales (en filas/días).
+# Una muestra de hace 90 días pesa la mitad que la actual; 180 días = 1/4.
+# El dataset tiene ~270 días, así que las muestras más viejas pesan ~0.13.
+SAMPLE_WEIGHT_HALF_LIFE = 90
 
 
 def load_features(filepath: str = None) -> pd.DataFrame:
@@ -45,6 +51,13 @@ def prepare_data(df: pd.DataFrame):
     return X, y_class, y_reg, feature_cols
 
 
+def exponential_sample_weights(n: int, half_life: int = SAMPLE_WEIGHT_HALF_LIFE) -> np.ndarray:
+    # Pesos exponenciales: la última fila pesa 1.0, una de hace `half_life` filas pesa 0.5.
+    # Asume que X está ordenado cronológicamente (lo está: feature_engineering ordena por fecha).
+    ages = np.arange(n)[::-1]  # [n-1, n-2, ..., 0]
+    return 0.5 ** (ages / half_life)
+
+
 def train_classifier(X: pd.DataFrame, y: pd.Series) -> tuple:
     """Entrena clasificador XGBoost con validación temporal."""
     model = XGBClassifier(
@@ -59,17 +72,23 @@ def train_classifier(X: pd.DataFrame, y: pd.Series) -> tuple:
         random_state=42,
     )
 
-    # Validación cruzada con splits temporales (respeta el orden)
+    # Validación cruzada con splits temporales (respeta el orden) — referencia sin pesos
     tscv = TimeSeriesSplit(n_splits=5)
     cv_scores = cross_val_score(model, X, y, cv=tscv, scoring="accuracy")
-    print(f"CV Accuracy: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+    print(f"CV Accuracy (sin pesos): {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
 
-    # Entrenamiento final
+    # Entrenamiento final con sample weights exponenciales (recientes pesan más)
     split = int(len(X) * 0.8)
     X_train, X_test = X.iloc[:split], X.iloc[split:]
     y_train, y_test = y.iloc[:split], y.iloc[split:]
 
-    model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+    sw_train = exponential_sample_weights(len(X_train))
+    model.fit(
+        X_train, y_train,
+        sample_weight=sw_train,
+        eval_set=[(X_test, y_test)],
+        verbose=False,
+    )
 
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
@@ -81,7 +100,10 @@ def train_classifier(X: pd.DataFrame, y: pd.Series) -> tuple:
 
 
 def train_regressor(X: pd.DataFrame, y: pd.Series) -> tuple:
-    """Entrena regresor XGBoost para predecir retorno porcentual."""
+    """Entrena regresor XGBoost para predecir retorno porcentual.
+    Devuelve (modelo, X_test, y_test, y_pred, mae_return) — el MAE en retorno
+    se usa luego para construir la banda de incertidumbre del precio estimado.
+    """
     # Eliminar filas con NaN en el target (última fila no tiene precio futuro)
     valid = y.notna()
     X = X[valid]
@@ -102,14 +124,15 @@ def train_regressor(X: pd.DataFrame, y: pd.Series) -> tuple:
     X_train, X_test = X.iloc[:split], X.iloc[split:]
     y_train, y_test = y.iloc[:split], y.iloc[split:]
 
-    model.fit(X_train, y_train)
+    sw_train = exponential_sample_weights(len(X_train))
+    model.fit(X_train, y_train, sample_weight=sw_train)
 
     y_pred = model.predict(X_test)
     mae = mean_absolute_error(y_test, y_pred)
     mape = mean_absolute_percentage_error(y_test + 1, y_pred + 1)
     print(f"Regressor MAE: {mae:.4f} | MAPE: {mape:.4f}")
 
-    return model, X_test, y_test, y_pred
+    return model, X_test, y_test, y_pred, mae
 
 
 def plot_feature_importance(model, feature_names: list, top_n: int = 20):
@@ -159,7 +182,7 @@ def save_model(model, name: str):
 
 
 def load_model(name: str):
-    files = sorted([f for f in os.listdir(MODELS_DIR) if f.startswith(name)])
+    files = sorted([f for f in os.listdir(MODELS_DIR) if f.startswith(name) and f.endswith(".pkl")])
     if not files:
         raise FileNotFoundError(f"No se encontró modelo {name} en {MODELS_DIR}")
     path = os.path.join(MODELS_DIR, files[-1])
@@ -167,6 +190,29 @@ def load_model(name: str):
         model = pickle.load(f)
     print(f"Modelo cargado: {path}")
     return model
+
+
+def save_regressor_metadata(mae_return: float):
+    """Persiste el MAE del regresor en JSON junto a los modelos.
+    Se usa luego en predict_horizon para construir la banda ± de precio.
+    """
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    path = os.path.join(MODELS_DIR, f"regressor_metadata_{datetime.now().strftime('%Y%m%d')}.json")
+    with open(path, "w") as f:
+        json.dump({"mae_return": float(mae_return)}, f)
+    print(f"Metadata del regresor guardada en {path}")
+    return path
+
+
+def load_regressor_metadata() -> dict:
+    if not os.path.isdir(MODELS_DIR):
+        return {}
+    files = sorted([f for f in os.listdir(MODELS_DIR) if f.startswith("regressor_metadata_") and f.endswith(".json")])
+    if not files:
+        return {}
+    path = os.path.join(MODELS_DIR, files[-1])
+    with open(path) as f:
+        return json.load(f)
 
 
 def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
@@ -188,6 +234,12 @@ def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
     current_price = df["buy"].iloc[-1]
     predicted_price = current_price * (1 + predicted_return)
 
+    # Banda de incertidumbre: ± MAE del regresor (en retorno), expresado en pesos
+    # sobre el precio actual. Si no hay metadata aún, banda = 0.
+    metadata = load_regressor_metadata()
+    mae_return = float(metadata.get("mae_return", 0.0))
+    price_band = current_price * mae_return
+
     return {
         "date_predicted": datetime.now().date().isoformat(),
         "current_price": current_price,
@@ -195,6 +247,9 @@ def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
         "confidence": float(max(direction_proba)),
         "predicted_return_pct": float(predicted_return * 100),
         "predicted_price": float(predicted_price),
+        "predicted_price_low": float(predicted_price - price_band),
+        "predicted_price_high": float(predicted_price + price_band),
+        "mae_return_pct": float(mae_return * 100),
     }
 
 
@@ -215,8 +270,9 @@ def train_full_pipeline():
     save_model(clf, "classifier")
 
     print("\n--- Regresor (retorno %) ---")
-    reg, X_test_r, y_test_r, y_pred_r = train_regressor(X, y_reg)
+    reg, X_test_r, y_test_r, y_pred_r, mae_return = train_regressor(X, y_reg)
     save_model(reg, "regressor")
+    save_regressor_metadata(mae_return)
 
     plot_feature_importance(clf, feature_cols)
 
@@ -227,6 +283,8 @@ def train_full_pipeline():
           f"(confianza: {prediction['confidence']:.1%})")
     print(f"Retorno estimado 30d: {prediction['predicted_return_pct']:+.2f}%")
     print(f"Precio estimado 30d:  ${prediction['predicted_price']:.2f}")
+    print(f"Banda ±MAE:           ${prediction['predicted_price_low']:.2f} – "
+          f"${prediction['predicted_price_high']:.2f} (±{prediction['mae_return_pct']:.2f}%)")
 
     return prediction
 
