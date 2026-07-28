@@ -5,7 +5,7 @@ Uso: python generate_report.py
 import os
 import sys
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,6 +20,11 @@ HISTORY_PATH = os.path.join("data", "predictions_history.csv")
 
 
 MODEL_MAX_AGE_DAYS = 7
+
+# Ventana de historial que se muestra/promedia en el reporte (el CSV completo
+# se sigue guardando siempre; esto solo acota lo que se renderiza en index.html
+# para que la página no crezca sin límite).
+HISTORY_DISPLAY_DAYS = 90
 
 
 def maybe_retrain():
@@ -96,6 +101,8 @@ def calculate_accuracy(dollar_df: pd.DataFrame) -> dict:
         return {"total": 0, "correct": 0, "accuracy": None}
 
     history = pd.read_csv(HISTORY_PATH, parse_dates=["date"])
+    cutoff = pd.Timestamp(date.today() - timedelta(days=HISTORY_DISPLAY_DAYS))
+    history = history[history["date"] >= cutoff]
     dollar_df = dollar_df.copy()
     dollar_df["date"] = pd.to_datetime(dollar_df["date"])
 
@@ -126,6 +133,8 @@ def build_prediction_history_rows(dollar_df):
         return '<div class="text-gray-400 text-sm py-4 text-center">Sin historial todavía.</div>', 0, 0
 
     history = pd.read_csv(HISTORY_PATH, parse_dates=["date"])
+    cutoff = pd.Timestamp(date.today() - timedelta(days=HISTORY_DISPLAY_DAYS))
+    history = history[history["date"] >= cutoff]
     df = dollar_df.copy()
     df["date"] = pd.to_datetime(df["date"])
 
