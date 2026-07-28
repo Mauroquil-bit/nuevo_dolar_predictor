@@ -227,9 +227,16 @@ def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
     feature_cols = get_feature_columns(df)
     last_row = df[feature_cols].fillna(0).iloc[[-1]]
 
-    direction = classifier.predict(last_row)[0]
-    direction_proba = classifier.predict_proba(last_row)[0]
     predicted_return = regressor.predict(last_row)[0]
+    direction = "SUBE" if predicted_return > 0 else "BAJA"
+
+    # El regresor es quien fija la dirección (es lo que se muestra en el resto
+    # del reporte: precio estimado, recomendación, etc.). El clasificador queda
+    # como señal auxiliar: su "confianza" es la probabilidad que le asigna a esa
+    # MISMA dirección, no a su propia clase más probable — si no, podía mostrarse
+    # "BAJA" con una confianza que en realidad era la del clasificador para SUBE.
+    direction_proba = classifier.predict_proba(last_row)[0]
+    confidence = direction_proba[1] if direction == "SUBE" else direction_proba[0]
 
     current_price = df["buy"].iloc[-1]
     predicted_price = current_price * (1 + predicted_return)
@@ -243,8 +250,8 @@ def predict_horizon(df: pd.DataFrame, classifier=None, regressor=None) -> dict:
     return {
         "date_predicted": datetime.now().date().isoformat(),
         "current_price": current_price,
-        "predicted_direction": "SUBE" if direction == 1 else "BAJA",
-        "confidence": float(max(direction_proba)),
+        "predicted_direction": direction,
+        "confidence": float(confidence),
         "predicted_return_pct": float(predicted_return * 100),
         "predicted_price": float(predicted_price),
         "predicted_price_low": float(predicted_price - price_band),

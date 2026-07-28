@@ -246,11 +246,14 @@ def render_html(prediction, dollar_df):
     else:
         precision_label = f"Dirección: acumulando datos ({accuracy_data['total']} pred. validadas)"
 
-    # La recomendación se basa en si el precio estimado supera el break-even
-    # Esto es más consistente que usar el clasificador, que puede contradecir al regresor
-    recomendar_pf = predicted_price < breakeven  # basado en tasa real Galicia
-    display_direction = "SUBE" if ret_pct > 0 else "BAJA"
-    dir_icon = "📈" if ret_pct > 0 else "📉"
+    # La recomendación exige que INCLUSO el escenario más optimista para el dólar
+    # (price_high, el techo de la banda ±MAE) pierda contra el plazo fijo. Compararlo
+    # solo contra el punto medio no alcanza: el dólar blue en Argentina está manejado
+    # por el gobierno (quieto varios meses, devaluaciones discretas de golpe), así que
+    # el riesgo de una suba brusca no es simétrico y no se puede ignorar solo porque
+    # el punto medio de la estimación quede por debajo del break-even.
+    recomendar_pf = price_high < breakeven  # basado en tasa real Galicia
+    dir_icon = "📈" if direction == "SUBE" else "📉"
 
     # Condicionales de estilo
     veredicto = "Hoy es buen momento para pasarte a plazo fijo" if recomendar_pf else "Quedate en dólares, no es momento de plazo fijo"
@@ -264,6 +267,16 @@ def render_html(prediction, dollar_df):
     pulse_bg = "bg-verde" if recomendar_pf else "bg-rojo"
     pulse_class = "pulse-green" if recomendar_pf else "pulse-red"
     no_conviene_dolar = "no le gana al plazo fijo" if recomendar_pf else "le gana al plazo fijo"
+
+    if has_band:
+        banda_txt = f" (rango estimado: {fmt(price_low)} – {fmt(price_high)})"
+        comparacion_txt = (
+            f"Incluso en el escenario más optimista para el dólar dentro de ese rango "
+            f"(<strong>{fmt(price_high)}</strong>), {no_conviene_dolar}."
+        )
+    else:
+        banda_txt = ""
+        comparacion_txt = f"lo que <strong>{no_conviene_dolar}</strong>."
 
     price_rows = build_price_rows(dollar_df, today)
     prediction_rows, pred_correct, pred_validated = build_prediction_history_rows(dollar_df)
@@ -365,7 +378,7 @@ def render_html(prediction, dollar_df):
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 {border_pred}">
           <div class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-1">Estimado 30 días</div>
           <div class="text-3xl font-extrabold {text_pred}">{fmt(predicted_price)}</div>
-          <div class="text-sm text-gray-500">{dir_icon} {display_direction} en 30 días ({ret_pct:+.2f}%)</div>
+          <div class="text-sm text-gray-500">{dir_icon} {direction} en 30 días ({ret_pct:+.2f}%)</div>
           {f'<div class="text-xs text-gray-400 mt-2">Rango esperado: <strong class="text-gray-600">{fmt(price_low)} – {fmt(price_high)}</strong> (±{mae_pct:.2f}% MAE hist.)</div>' if has_band else ''}
         </div>
         <div class="bg-white rounded-2xl card-shadow p-5 border-l-4 border-amarillo">
@@ -381,7 +394,7 @@ def render_html(prediction, dollar_df):
       <p class="mt-4 text-sm text-gray-600 {alert_bg} border rounded-xl px-4 py-3">
         {veredicto_icon} El Banco Galicia te paga <strong>{pf_galicia_rate*100:.2f}% en 30 días</strong> (21% anual, lo que recibe el ahorrista común).
         Para que te convenga el plazo fijo, el dólar blue tiene que estar por debajo de <strong>{fmt(breakeven)}</strong> en 30 días.
-        El modelo estima que llegará a <strong>{fmt(predicted_price)}</strong>, lo que <strong>{no_conviene_dolar}</strong>.
+        El modelo estima <strong>{fmt(predicted_price)}</strong>{banda_txt}. {comparacion_txt}
       </p>
     </section>
 
@@ -396,7 +409,7 @@ def render_html(prediction, dollar_df):
         </div>
         <div class="mt-4 flex items-center gap-2 text-sm {text_pred} font-medium">
           <span class="{pulse_class} w-2 h-2 {pulse_bg} rounded-full inline-block"></span>
-          Estimación a 30 días: {display_direction} ({ret_pct:+.2f}%)
+          Estimación a 30 días: {direction} ({ret_pct:+.2f}%)
         </div>
       </div>
     </section>
@@ -439,7 +452,7 @@ def render_html(prediction, dollar_df):
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">2.</span>
-              <span>Precio estimado {display_direction} → <strong class="text-white">{fmt(predicted_price)}</strong> ({ret_pct:+.2f}%){f' · rango {fmt(price_low)}–{fmt(price_high)}' if has_band else ''}</span>
+              <span>Precio estimado {direction} → <strong class="text-white">{fmt(predicted_price)}</strong> ({ret_pct:+.2f}%){f' · rango {fmt(price_low)}–{fmt(price_high)}' if has_band else ''}</span>
             </div>
             <div class="flex items-start gap-2 text-sm text-blue-100">
               <span class="{accent} font-bold mt-0.5">3.</span>
